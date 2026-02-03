@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Konsole - Meinungsmeter</title>
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Admin Login -->
+        <div id="adminLogin" class="admin-section active">
+            <div class="admin-box">
+                <h1>Admin Konsole - Login</h1>
+                <form id="adminLoginForm">
+                    <div class="form-group">
+                        <label for="adminPassword">Admin Passwort:</label>
+                        <input type="password" id="adminPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Anmelden</button>
+                    <div id="adminLoginMessage" class="message"></div>
+                </form>
+                <p class="back-link"><a href="index.html">← Zurück zur Startseite</a></p>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="admin-section">
+            <div class="admin-header">
+                <h1>Admin Konsole</h1>
+                <button onclick="adminLogout()" class="btn btn-secondary">Logout</button>
+            </div>
+
+            <!-- Statistiken -->
+            <div class="stats-section">
+                <div class="stat-card">
+                    <h3>Gesamtbenutzer</h3>
+                    <p id="totalUsers" class="stat-number">0</p>
+                </div>
+            </div>
+
+            <!-- Benutzer-Tabelle -->
+            <div class="users-section">
+                <div class="users-header">
+                    <h2>Benutzerverwaltung</h2>
+                    <button onclick="showAddUserModal()" class="btn btn-primary">+ Neuer Benutzer</button>
+                </div>
+                <div id="usersMessage" class="message"></div>
+                <table id="usersTable" class="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Benutzername</th>
+                            <th>Email</th>
+                            <th>Registriert am</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersList">
+                        <tr>
+                            <td colspan="5" class="no-data">Lade Benutzer...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit/Add User Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeUserModal()">&times;</span>
+            <h2 id="modalTitle">Benutzer bearbeiten</h2>
+            <form id="userForm">
+                <div class="form-group">
+                    <label for="modalUsername">Benutzername:</label>
+                    <input type="text" id="modalUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="modalEmail">Email:</label>
+                    <input type="email" id="modalEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="modalPassword">Neues Passwort (optional):</label>
+                    <input type="password" id="modalPassword" placeholder="Leer lassen um nicht zu ändern">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                    <button type="button" onclick="closeUserModal()" class="btn btn-secondary">Abbrechen</button>
+                </div>
+                <div id="modalMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content modal-confirm">
+            <h2>Bestätigung</h2>
+            <p>Möchten Sie diesen Benutzer wirklich löschen?</p>
+            <p id="deleteUserInfo" class="warning"></p>
+            <div class="modal-actions">
+                <button onclick="confirmDelete()" class="btn btn-danger">Löschen</button>
+                <button onclick="closeDeleteModal()" class="btn btn-secondary">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin-script.js"></script>
+</body>
+</html>
