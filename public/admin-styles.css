@@ -361,6 +361,29 @@ input:focus {
     margin: 15px 0;
 }
 
+/* Opinions table tweaks */
+.opinions-section {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.06);
+    margin-top: 20px;
+}
+
+.users-table td pre, .users-table td code {
+    white-space: pre-wrap;
+}
+
+/* Modal textarea styling for opinion edit */
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    resize: vertical;
+}
+
 /* Back Link */
 .back-link {
     text-align: center;

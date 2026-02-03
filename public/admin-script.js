@@ -1,53 +1,69 @@
 let adminToken = null;
 let currentEditUserId = null;
 let currentDeleteUserId = null;
+let currentEditOpinionId = null;
+let currentDeleteOpinionId = null;
+
+// Utility: basic HTML escape
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>\"]/g, function (s) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'})[s];
+    });
+}
 
 // Admin Login
-document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const password = document.getElementById('adminPassword').value;
-    const messageDiv = document.getElementById('adminLoginMessage');
-    
-    if (!password) {
-        showMessage(messageDiv, 'Passwort erforderlich', 'error');
-        return;
-    }
-    
-    // Speichere Token im Memory (nicht in localStorage für bessere Sicherheit)
-    adminToken = password;
-    
-    // Teste die Verbindung mit einem API-Call
-    try {
-        const response = await fetch('/api/admin/stats', {
-            method: 'GET',
-            headers: {
-                'x-admin-token': adminToken,
-                'Content-Type': 'application/json'
+window.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('adminLoginForm');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = document.getElementById('adminPassword').value;
+            const messageDiv = document.getElementById('adminLoginMessage');
+            
+            if (!password) {
+                showMessage(messageDiv, 'Passwort erforderlich', 'error');
+                return;
+            }
+            
+            // Speichere Token im Memory (nicht in localStorage für bessere Sicherheit)
+            adminToken = password;
+            
+            // Teste die Verbindung mit einem API-Call
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    method: 'GET',
+                    headers: {
+                        'x-admin-token': adminToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.status === 401) {
+                    adminToken = null;
+                    showMessage(messageDiv, 'Falsches Admin-Passwort', 'error');
+                    document.getElementById('adminPassword').value = '';
+                    return;
+                }
+                
+                if (response.ok) {
+                    // Erfolgreiches Login
+                    document.getElementById('adminLogin').classList.remove('active');
+                    document.getElementById('adminDashboard').classList.add('active');
+                    showMessage(messageDiv, 'Login erfolgreich', 'success');
+                    loadUsers();
+                    loadStats();
+                    loadOpinions();
+                } else {
+                    showMessage(messageDiv, 'Fehler beim Login', 'error');
+                }
+            } catch (error) {
+                console.error('Fehler:', error);
+                showMessage(messageDiv, 'Fehler bei der Verbindung zum Server', 'error');
+                adminToken = null;
             }
         });
-        
-        if (response.status === 401) {
-            adminToken = null;
-            showMessage(messageDiv, 'Falsches Admin-Passwort', 'error');
-            document.getElementById('adminPassword').value = '';
-            return;
-        }
-        
-        if (response.ok) {
-            // Erfolgreiches Login
-            document.getElementById('adminLogin').classList.remove('active');
-            document.getElementById('adminDashboard').classList.add('active');
-            showMessage(messageDiv, 'Login erfolgreich', 'success');
-            loadUsers();
-            loadStats();
-        } else {
-            showMessage(messageDiv, 'Fehler beim Login', 'error');
-        }
-    } catch (error) {
-        console.error('Fehler:', error);
-        showMessage(messageDiv, 'Fehler bei der Verbindung zum Server', 'error');
-        adminToken = null;
     }
 });
 
@@ -103,6 +119,144 @@ async function loadUsers() {
         showMessage(messageDiv, 'Fehler bei der Verbindung zum Server', 'error');
     }
 }
+
+// --- Meinungen laden für Admin ---
+async function loadOpinions() {
+    if (!adminToken) return;
+    const list = document.getElementById('opinionsList');
+    const messageDiv = document.getElementById('opinionsMessage');
+    try {
+        const response = await fetch('/api/admin/opinions', {
+            method: 'GET',
+            headers: { 'x-admin-token': adminToken }
+        });
+        if (!response.ok) {
+            showMessage(messageDiv, 'Fehler beim Laden der Meinungen', 'error');
+            return;
+        }
+        const data = await response.json();
+        const opinions = data.opinions || [];
+        if (opinions.length === 0) {
+            list.innerHTML = '<tr><td colspan="6" class="no-data">Keine Meinungen vorhanden</td></tr>';
+            return;
+        }
+
+        list.innerHTML = opinions.map(o => `
+            <tr>
+                <td>${o.id}</td>
+                <td style="max-width:400px;">${escapeHtml(o.text)}</td>
+                <td>${o.votes_total || 0}</td>
+                <td>${o.username || '-'}</td>
+                <td>${formatDate(o.created_at)}</td>
+                <td>
+                    <div class="actions">
+                        <button class="btn btn-edit" onclick="showEditOpinionModal(${o.id}, ${JSON.stringify(o.text)})">Bearbeiten</button>
+                        <button class="btn btn-delete" onclick="showDeleteOpinionModal(${o.id})">Löschen</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+        showMessage(messageDiv, '', '');
+    } catch (error) {
+        console.error(error);
+        showMessage(messageDiv, 'Fehler bei der Verbindung zum Server', 'error');
+    }
+}
+
+function showEditOpinionModal(opinionId, text) {
+    currentEditOpinionId = opinionId;
+    const ta = document.getElementById('modalOpinionText');
+    ta.value = text || '';
+    document.getElementById('modalOpinionCharCount').textContent = `${ta.value.length} / 256`;
+    document.getElementById('opinionModalMessage').textContent = '';
+    document.getElementById('opinionModal').classList.add('active');
+    ta.focus();
+}
+
+function closeOpinionModal() {
+    document.getElementById('opinionModal').classList.remove('active');
+    currentEditOpinionId = null;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const ta = document.getElementById('modalOpinionText');
+    if (ta) {
+        ta.addEventListener('input', () => {
+            document.getElementById('modalOpinionCharCount').textContent = `${ta.value.length} / 256`;
+        });
+    }
+});
+
+// Save edited opinion
+window.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('opinionForm');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentEditOpinionId) return;
+            const text = document.getElementById('modalOpinionText').value.trim();
+            const messageDiv = document.getElementById('opinionModalMessage');
+            if (!text) {
+                showMessage(messageDiv, 'Text darf nicht leer sein', 'error');
+                return;
+            }
+            try {
+                const response = await fetch(`/api/admin/opinions/${currentEditOpinionId}`, {
+                    method: 'PUT',
+                    headers: { 'x-admin-token': adminToken, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showMessage(messageDiv, data.message || 'Gespeichert', 'success');
+                    setTimeout(() => { closeOpinionModal(); loadOpinions(); }, 800);
+                } else {
+                    showMessage(messageDiv, data.message || 'Fehler beim Speichern', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showMessage(messageDiv, 'Fehler bei der Verbindung zum Server', 'error');
+            }
+        });
+    }
+});
+
+// Delete opinion flow
+function showDeleteOpinionModal(opinionId) {
+    currentDeleteOpinionId = opinionId;
+    document.getElementById('deleteOpinionModal').classList.add('active');
+}
+
+function closeDeleteOpinionModal() {
+    document.getElementById('deleteOpinionModal').classList.remove('active');
+    currentDeleteOpinionId = null;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('confirmDeleteOpinionBtn');
+    if (btn) {
+        btn.addEventListener('click', async () => {
+            if (!currentDeleteOpinionId) return;
+            try {
+                const response = await fetch(`/api/admin/opinions/${currentDeleteOpinionId}`, {
+                    method: 'DELETE',
+                    headers: { 'x-admin-token': adminToken }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    closeDeleteOpinionModal();
+                    loadOpinions();
+                    showMessage(document.getElementById('opinionsMessage'), 'Meinung erfolgreich gelöscht', 'success');
+                } else {
+                    showMessage(document.getElementById('opinionsMessage'), data.message || 'Fehler beim Löschen', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showMessage(document.getElementById('opinionsMessage'), 'Fehler bei der Verbindung zum Server', 'error');
+            }
+        });
+    }
+});
 
 // Statistiken laden
 async function loadStats() {
@@ -161,71 +315,76 @@ function closeUserModal() {
 }
 
 // Benutzer speichern
-document.getElementById('userForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const username = document.getElementById('modalUsername').value;
-    const email = document.getElementById('modalEmail').value;
-    const age = document.getElementById('modalAge').value;
-    const state = document.getElementById('modalState').value;
-    const profession = document.getElementById('modalProfession').value;
-    const password = document.getElementById('modalPassword').value;
-    const messageDiv = document.getElementById('modalMessage');
-    
-    if (!username || !email) {
-        showMessage(messageDiv, 'Benutzername und Email sind erforderlich', 'error');
-        return;
-    }
-    
-    try {
-        let url = '/api/admin/users';
-        let method = 'POST';
-        let body = { 
-            email, 
-            username,
-            age: age ? parseInt(age) : null,
-            state: state || null,
-            profession: profession || null
-        };
-        
-        if (currentEditUserId) {
-            url += '/' + currentEditUserId;
-            method = 'PUT';
-            if (password) {
-                body.password = password;
-            }
-        } else {
-            if (!password) {
-                showMessage(messageDiv, 'Passwort erforderlich für neuen Benutzer', 'error');
+window.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('userForm');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('modalUsername').value;
+            const email = document.getElementById('modalEmail').value;
+            const age = document.getElementById('modalAge').value;
+            const state = document.getElementById('modalState').value;
+            const profession = document.getElementById('modalProfession').value;
+            const password = document.getElementById('modalPassword').value;
+            const messageDiv = document.getElementById('modalMessage');
+            
+            if (!username || !email) {
+                showMessage(messageDiv, 'Benutzername und Email sind erforderlich', 'error');
                 return;
             }
-            body.password = password;
-        }
-        
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'x-admin-token': adminToken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
+            
+            try {
+                let url = '/api/admin/users';
+                let method = 'POST';
+                let body = { 
+                    email, 
+                    username,
+                    age: age ? parseInt(age) : null,
+                    state: state || null,
+                    profession: profession || null
+                };
+                
+                if (currentEditUserId) {
+                    url += '/' + currentEditUserId;
+                    method = 'PUT';
+                    if (password) {
+                        body.password = password;
+                    }
+                } else {
+                    if (!password) {
+                        showMessage(messageDiv, 'Passwort erforderlich für neuen Benutzer', 'error');
+                        return;
+                    }
+                    body.password = password;
+                }
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'x-admin-token': adminToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage(messageDiv, data.message, 'success');
+                    setTimeout(() => {
+                        closeUserModal();
+                        loadUsers();
+                        loadStats();
+                    }, 1500);
+                } else {
+                    showMessage(messageDiv, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Fehler:', error);
+                showMessage(messageDiv, 'Fehler bei der Verbindung zum Server', 'error');
+            }
         });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showMessage(messageDiv, data.message, 'success');
-            setTimeout(() => {
-                closeUserModal();
-                loadUsers();
-                loadStats();
-            }, 1500);
-        } else {
-            showMessage(messageDiv, data.message, 'error');
-        }
-    } catch (error) {
-        console.error('Fehler:', error);
-        showMessage(messageDiv, 'Fehler bei der Verbindung zum Server', 'error');
     }
 });
 

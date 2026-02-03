@@ -242,6 +242,37 @@
         </div>
     </div>
 
+    <!-- New Opinion Modal -->
+    <div id="newOpinionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeNewOpinionModal()">&times;</span>
+            <h2>Neue Meinung erstellen</h2>
+            <div class="form-group">
+                <label for="opinionText">Text (max. 256 Zeichen):</label>
+                <textarea id="opinionText" maxlength="256" rows="4"></textarea>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+                    <button class="btn btn-secondary" onclick="closeNewOpinionModal()">Abbrechen</button>
+                    <span id="opinionCharCount">0 / 256</span>
+                </div>
+            </div>
+            <div style="margin-top:12px; text-align:right;">
+                <button class="btn btn-primary" id="sendOpinionButton" onclick="sendOpinion()">Senden</button>
+            </div>
+            <div id="opinionMessage" class="message" style="margin-top:8px;"></div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content history-content">
+            <span class="close" onclick="closeHistoryModal()">&times;</span>
+            <h2>Meine Meinungen</h2>
+            <div id="historyList">
+                <p class="no-data">Keine Einträge.</p>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>

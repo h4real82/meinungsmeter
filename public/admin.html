@@ -66,6 +66,31 @@
                     </tbody>
                 </table>
             </div>
+            <!-- Meinungen-Tabelle -->
+            <div class="opinions-section" style="margin-top:20px;">
+                <div class="users-header">
+                    <h2>Meinungen verwalten</h2>
+                    <button onclick="loadOpinions()" class="btn btn-primary">Aktualisieren</button>
+                </div>
+                <div id="opinionsMessage" class="message"></div>
+                <table id="opinionsTable" class="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Text</th>
+                            <th>Gesamt</th>
+                            <th>Benutzer</th>
+                            <th>Erstellt am</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="opinionsList">
+                        <tr>
+                            <td colspan="6" class="no-data">Lade Meinungen...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -135,6 +160,40 @@
             <div class="modal-actions">
                 <button onclick="confirmDelete()" class="btn btn-danger">Löschen</button>
                 <button onclick="closeDeleteModal()" class="btn btn-secondary">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Opinion Modal -->
+    <div id="opinionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeOpinionModal()">&times;</span>
+            <h2>Meinung bearbeiten</h2>
+            <form id="opinionForm">
+                <div class="form-group">
+                    <label for="modalOpinionText">Text (max. 256 Zeichen):</label>
+                    <textarea id="modalOpinionText" maxlength="256" rows="4"></textarea>
+                    <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+                        <span id="modalOpinionCharCount">0 / 256</span>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                    <button type="button" onclick="closeOpinionModal()" class="btn btn-secondary">Abbrechen</button>
+                </div>
+                <div id="opinionModalMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Opinion Confirmation -->
+    <div id="deleteOpinionModal" class="modal">
+        <div class="modal-content modal-confirm">
+            <h2>Bestätigung</h2>
+            <p>Möchten Sie diese Meinung wirklich löschen?</p>
+            <div class="modal-actions">
+                <button id="confirmDeleteOpinionBtn" class="btn btn-danger">Löschen</button>
+                <button onclick="closeDeleteOpinionModal()" class="btn btn-secondary">Abbrechen</button>
             </div>
         </div>
     </div>
