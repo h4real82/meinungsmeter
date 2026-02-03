@@ -114,14 +114,14 @@ function showDashboard(user) {
     document.getElementById('loginForm').classList.remove('active');
     document.getElementById('signupForm').classList.remove('active');
     document.getElementById('dashboard').classList.add('active');
-    
-    // Benutzerinformationen anzeigen
-    const userInfoDiv = document.getElementById('userInfo');
-    userInfoDiv.innerHTML = `
-        <h2>Willkommen, ${user.username}!</h2>
-        <p><strong>Email:</strong> ${user.email}</p>
-        <p><strong>Benutzer-ID:</strong> ${user.id}</p>
-    `;
+
+    document.body.classList.add('dashboard-view');
+
+    const avatar = document.getElementById('userAvatar');
+    const displayName = document.getElementById('userDisplayName');
+    const initial = user.username ? user.username.charAt(0).toUpperCase() : 'U';
+    avatar.textContent = initial;
+    displayName.textContent = user.username ? user.username : 'User';
 }
 
 // Logout-Funktion
@@ -129,11 +129,32 @@ function logout() {
     localStorage.removeItem('user');
     document.getElementById('dashboard').classList.remove('active');
     document.getElementById('loginForm').classList.add('active');
+    document.body.classList.remove('dashboard-view');
     
     // Formular leeren
     document.getElementById('loginFormElement').reset();
     document.getElementById('signupFormElement').reset();
     document.getElementById('loginMessage').textContent = '';
+}
+
+// Dropdown im User-Menü
+const userMenuButton = document.getElementById('userMenuButton');
+const userDropdown = document.getElementById('userDropdown');
+
+if (userMenuButton && userDropdown) {
+    userMenuButton.addEventListener('click', () => {
+        const isOpen = userDropdown.classList.toggle('active');
+        userMenuButton.setAttribute('aria-expanded', String(isOpen));
+        userDropdown.setAttribute('aria-hidden', String(!isOpen));
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!userDropdown.contains(event.target) && !userMenuButton.contains(event.target)) {
+            userDropdown.classList.remove('active');
+            userMenuButton.setAttribute('aria-expanded', 'false');
+            userDropdown.setAttribute('aria-hidden', 'true');
+        }
+    });
 }
 
 // Passwort vergessen Modal anzeigen
