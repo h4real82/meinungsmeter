@@ -45,6 +45,27 @@ function initializeDatabase() {
       console.log('Users-Tabelle erstellt/existiert bereits');
     }
   });
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS opinions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      text TEXT NOT NULL,
+      votes_for INTEGER DEFAULT 0,
+      votes_neutral INTEGER DEFAULT 0,
+      votes_against INTEGER DEFAULT 0,
+      votes_total INTEGER DEFAULT 0,
+      user_id INTEGER,
+      username TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `, (err) => {
+    if (err) {
+      console.error('Fehler beim Erstellen der Meinungen-Tabelle:', err);
+    } else {
+      console.log('Meinungen-Tabelle erstellt/existiert bereits');
+    }
+  });
 }
 
 // Signup Endpoint
@@ -138,6 +159,121 @@ app.post('/api/login', (req, res) => {
     console.error('Fehler:', error);
     res.status(500).json({ message: 'Fehler beim Verarbeiten der Anfrage' });
   }
+});
+
+// Neue Meinung erstellen
+app.post('/api/opinions', (req, res) => {
+  const { text, userId, username } = req.body;
+
+  if (!text || !userId || !username) {
+    return res.status(400).json({ message: 'Text und Benutzerinformationen sind erforderlich' });
+  }
+
+  const trimmedText = String(text).trim();
+
+  if (trimmedText.length === 0 || trimmedText.length > 256) {
+    return res.status(400).json({ message: 'Text muss zwischen 1 und 256 Zeichen lang sein' });
+  }
+
+  db.run(
+    'INSERT INTO opinions (text, user_id, username, votes_for, votes_neutral, votes_against, votes_total) VALUES (?, ?, ?, 0, 0, 0, 0)',
+    [trimmedText, userId, username],
+    function(err) {
+      if (err) {
+        console.error('Datenbankfehler:', err);
+        return res.status(500).json({ message: 'Fehler beim Erstellen der Meinung' });
+      }
+
+      res.status(201).json({
+        message: 'Meinung erfolgreich erstellt',
+        opinionId: this.lastID
+      });
+    }
+  );
+});
+
+// Alle Meinungen abrufen
+app.get('/api/opinions', (req, res) => {
+  db.all(
+    'SELECT id, text, votes_for, votes_neutral, votes_against, votes_total, username, created_at FROM opinions ORDER BY created_at DESC',
+    (err, opinions) => {
+      if (err) {
+        console.error('Datenbankfehler:', err);
+        return res.status(500).json({ message: 'Fehler beim Abrufen der Meinungen' });
+      }
+      res.status(200).json({ opinions: opinions || [] });
+    }
+  );
+});
+
+// Meinungen eines Users abrufen
+app.get('/api/opinions/user/:userId', (req, res) => {
+  const userId = req.params.userId;
+
+  if (!userId) {
+    return res.status(400).json({ message: 'Benutzer-ID erforderlich' });
+  }
+
+  db.all(
+    'SELECT id, text, votes_for, votes_neutral, votes_against, votes_total, created_at FROM opinions WHERE user_id = ? ORDER BY created_at DESC',
+    [userId],
+    (err, opinions) => {
+      if (err) {
+        console.error('Datenbankfehler:', err);
+        return res.status(500).json({ message: 'Fehler beim Abrufen der Meinungen' });
+      }
+      res.status(200).json({ opinions: opinions || [] });
+    }
+  );
+});
+
+// Abstimmung fÃ¼r eine Meinung
+app.post('/api/opinions/:id/vote', (req, res) => {
+  const opinionId = req.params.id;
+  const { type } = req.body;
+
+  if (!opinionId || !type) {
+    return res.status(400).json({ message: 'Abstimmungstyp erforderlich' });
+  }
+
+  let column = null;
+  if (type === 'for') column = 'votes_for';
+  if (type === 'neutral') column = 'votes_neutral';
+  if (type === 'against') column = 'votes_against';
+
+  if (!column) {
+    return res.status(400).json({ message: 'UngÃ¼ltiger Abstimmungstyp' });
+  }
+
+  db.run(
+    `UPDATE opinions
+     SET ${column} = ${column} + 1,
+         votes_total = votes_for + votes_neutral + votes_against + 1
+     WHERE id = ?`,
+    [opinionId],
+    function(err) {
+      if (err) {
+        console.error('Datenbankfehler:', err);
+        return res.status(500).json({ message: 'Fehler beim Abstimmen' });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ message: 'Meinung nicht gefunden' });
+      }
+
+      db.get(
+        'SELECT id, votes_for, votes_neutral, votes_against, votes_total FROM opinions WHERE id = ?',
+        [opinionId],
+        (err, opinion) => {
+          if (err) {
+            console.error('Datenbankfehler:', err);
+            return res.status(500).json({ message: 'Fehler beim Abrufen der Meinung' });
+          }
+          res.status(200).json({ opinion });
+        }
+      );
+    }
+  );
 });
 
 // Passwort vergessen - Token generieren
@@ -288,6 +424,78 @@ app.get('/api/admin/stats', verifyAdminToken, (req, res) => {
       res.status(200).json({
         total_users: row.total_users || 0
       });
+    }
+  );
+});
+
+// Admin: Alle Meinungen abrufen
+app.get('/api/admin/opinions', verifyAdminToken, (req, res) => {
+  db.all(
+    'SELECT id, text, votes_for, votes_neutral, votes_against, votes_total, username, created_at FROM opinions ORDER BY created_at DESC',
+    (err, opinions) => {
+      if (err) {
+        console.error('Datenbankfehler:', err);
+        return res.status(500).json({ message: 'Fehler beim Abrufen der Meinungen' });
+      }
+      res.status(200).json({ opinions: opinions || [] });
+    }
+  );
+});
+
+// Admin: Meinung aktualisieren
+app.put('/api/admin/opinions/:id', verifyAdminToken, (req, res) => {
+  const opinionId = req.params.id;
+  const { text } = req.body;
+
+  if (!opinionId || !text) {
+    return res.status(400).json({ message: 'Meinungs-ID und Text erforderlich' });
+  }
+
+  const trimmedText = String(text).trim();
+  if (trimmedText.length === 0 || trimmedText.length > 256) {
+    return res.status(400).json({ message: 'Text muss zwischen 1 und 256 Zeichen lang sein' });
+  }
+
+  db.run(
+    'UPDATE opinions SET text = ? WHERE id = ?',
+    [trimmedText, opinionId],
+    function(err) {
+      if (err) {
+        console.error('Datenbankfehler:', err);
+        return res.status(500).json({ message: 'Fehler beim Aktualisieren der Meinung' });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ message: 'Meinung nicht gefunden' });
+      }
+
+      res.status(200).json({ message: 'Meinung erfolgreich aktualisiert' });
+    }
+  );
+});
+
+// Admin: Meinung lÃ¶schen
+app.delete('/api/admin/opinions/:id', verifyAdminToken, (req, res) => {
+  const opinionId = req.params.id;
+
+  if (!opinionId) {
+    return res.status(400).json({ message: 'Meinungs-ID erforderlich' });
+  }
+
+  db.run(
+    'DELETE FROM opinions WHERE id = ?',
+    [opinionId],
+    function(err) {
+      if (err) {
+        console.error('Datenbankfehler:', err);
+        return res.status(500).json({ message: 'Fehler beim LÃ¶schen der Meinung' });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ message: 'Meinung nicht gefunden' });
+      }
+
+      res.status(200).json({ message: 'Meinung erfolgreich gelÃ¶scht' });
     }
   );
 });
