@@ -224,19 +224,25 @@ async function loadOpinions() {
                 const forPct = total > 0 ? (o.votes_for / total) * 100 : 0;
                 const neutralPct = total > 0 ? (o.votes_neutral / total) * 100 : 0;
                 const againstPct = total > 0 ? (o.votes_against / total) * 100 : 0;
+                
+                // Calculate arrow position based on weighted average of votes
+                // Formula: (votes_for * 0 + votes_neutral * 0.5 + votes_against * 1) / total * 100
+                // This puts the arrow from 0% (all "Dafür") to 100% (all "Dagegen")
+                let arrowPct = 0;
+                if (total > 0) {
+                    arrowPct = (o.votes_for * 0 + o.votes_neutral * 0.5 + o.votes_against * 1) / total * 100;
+                }
+                
                 buttonsOrBar = `
                     <div class="stats-bar-container">
                         <div class="stats-bar">
                             <div class="bar-section bar-for" style="width:${forPct}%"></div>
                             <div class="bar-section bar-neutral" style="width:${neutralPct}%"></div>
                             <div class="bar-section bar-against" style="width:${againstPct}%"></div>
+                            <div class="vote-indicator" style="left:${arrowPct}%"></div>
                         </div>
-                        <div class="stats-legend">
-                            <span><span class="dot dot-for"></span> Dafür: ${o.votes_for}</span>
-                            <span><span class="dot dot-neutral"></span> Egal: ${o.votes_neutral}</span>
-                            <span><span class="dot dot-against"></span> Dagegen: ${o.votes_against}</span>
-                        </div>
-                    </div>`;
+                    </div>
+                    <div class="stats-votes">Votes: ${total}</div>`;
             } else {
                 buttonsOrBar = `
                     <div class="rating-buttons">
