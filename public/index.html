@@ -94,12 +94,111 @@
         </div>
 
         <!-- Dashboard (nach erfolgreichem Login) -->
-        <div id="dashboard" class="form-container">
-            <div class="form-box">
-                <h1>Willkommen!</h1>
-                <div id="userInfo"></div>
-                <button onclick="logout()" class="btn btn-secondary">Logout</button>
-            </div>
+        <div id="dashboard" class="form-container dashboard-page">
+            <header class="dashboard-header">
+                <div class="banner">
+                    <div class="banner-graphic" aria-hidden="true">
+                        <svg viewBox="0 0 240 140" role="img" focusable="false">
+                            <defs>
+                                <linearGradient id="speedoGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#5ee7df"/>
+                                    <stop offset="100%" stop-color="#4a6cf7"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M30 110a90 90 0 0 1 180 0" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="14"/>
+                            <path d="M30 110a90 90 0 0 1 180 0" fill="none" stroke="url(#speedoGlow)" stroke-linecap="round" stroke-width="10" stroke-dasharray="420" stroke-dashoffset="90"/>
+                            <circle cx="120" cy="110" r="10" fill="#fff"/>
+                            <path d="M120 110 L170 60" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+                            <circle cx="170" cy="60" r="6" fill="#fff"/>
+                        </svg>
+                    </div>
+                    <div class="banner-text">
+                        <p class="banner-kicker">Willkommen zurück</p>
+                        <h1>MeinungsMeter</h1>
+                        <p class="banner-sub">Bewerte Meinungen in Sekunden und sieh, wie die Community tickt.</p>
+                    </div>
+                </div>
+                <div class="user-menu">
+                    <button class="avatar-button" id="userMenuButton" type="button" aria-expanded="false" aria-haspopup="true">
+                        <span id="userAvatar">M</span>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown" role="menu" aria-hidden="true">
+                        <p class="user-name" id="userDisplayName"></p>
+                        <button class="dropdown-item" type="button">Account</button>
+                        <button class="dropdown-item" type="button">Historie</button>
+                        <button class="dropdown-item logout-item" type="button" onclick="logout()">Logout</button>
+                    </div>
+                </div>
+            </header>
+
+            <section class="gallery">
+                <div class="opinion-card add-card">
+                    <button class="add-button" type="button">
+                        <span class="add-icon">+</span>
+                        <span class="add-text">Meinung anlegen</span>
+                    </button>
+                </div>
+
+                <div class="opinion-card">
+                    <p class="opinion-text">Remote Work sollte Standard sein, weil es Produktivität und Work-Life-Balance verbessert.</p>
+                    <div class="rating-buttons">
+                        <button type="button">Dafür</button>
+                        <button type="button">Egal</button>
+                        <button type="button">Dagegen</button>
+                    </div>
+                    <svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
+                        <polyline points="0,30 20,22 40,26 60,18 80,16 100,12 120,10" fill="none" stroke="currentColor" stroke-width="3"/>
+                    </svg>
+                </div>
+
+                <div class="opinion-card">
+                    <p class="opinion-text">Eine City-Maut würde den Verkehr beruhigen und die Luftqualität deutlich verbessern.</p>
+                    <div class="rating-buttons">
+                        <button type="button">Dafür</button>
+                        <button type="button">Egal</button>
+                        <button type="button">Dagegen</button>
+                    </div>
+                    <svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
+                        <polyline points="0,26 20,28 40,20 60,22 80,14 100,18 120,12" fill="none" stroke="currentColor" stroke-width="3"/>
+                    </svg>
+                </div>
+
+                <div class="opinion-card">
+                    <p class="opinion-text">KI-Assistenten sollten verpflichtend transparent machen, wie sie Entscheidungen treffen.</p>
+                    <div class="rating-buttons">
+                        <button type="button">Dafür</button>
+                        <button type="button">Egal</button>
+                        <button type="button">Dagegen</button>
+                    </div>
+                    <svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
+                        <polyline points="0,32 20,26 40,18 60,20 80,14 100,8 120,14" fill="none" stroke="currentColor" stroke-width="3"/>
+                    </svg>
+                </div>
+
+                <div class="opinion-card">
+                    <p class="opinion-text">Der ÖPNV sollte in Großstädten komplett kostenlos sein, um soziale Teilhabe zu sichern.</p>
+                    <div class="rating-buttons">
+                        <button type="button">Dafür</button>
+                        <button type="button">Egal</button>
+                        <button type="button">Dagegen</button>
+                    </div>
+                    <svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
+                        <polyline points="0,28 20,18 40,12 60,20 80,24 100,14 120,18" fill="none" stroke="currentColor" stroke-width="3"/>
+                    </svg>
+                </div>
+
+                <div class="opinion-card">
+                    <p class="opinion-text">Schulunterricht braucht mehr Projektarbeit, damit Schüler*innen praxisnäher lernen.</p>
+                    <div class="rating-buttons">
+                        <button type="button">Dafür</button>
+                        <button type="button">Egal</button>
+                        <button type="button">Dagegen</button>
+                    </div>
+                    <svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
+                        <polyline points="0,24 20,20 40,22 60,16 80,10 100,12 120,8" fill="none" stroke="currentColor" stroke-width="3"/>
+                    </svg>
+                </div>
+            </section>
         </div>
 
         <!-- Passwort vergessen Modal -->

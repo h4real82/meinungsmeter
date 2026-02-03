@@ -19,6 +19,17 @@ body {
     padding: 20px;
 }
 
+body.dashboard-view {
+    background: #f4f6fb;
+    display: block;
+}
+
+body.dashboard-view .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+}
+
 .form-container {
     display: none;
     animation: fadeIn 0.3s ease-in-out;
@@ -268,6 +279,208 @@ select:focus {
     display: block;
 }
 
+.dashboard-page {
+    display: none;
+}
+
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 24px;
+    background: #111827;
+    border-radius: 24px;
+    color: #fff;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+    margin-bottom: 32px;
+}
+
+.banner {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.banner-graphic {
+    width: 160px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+}
+
+.banner-graphic svg {
+    width: 130px;
+    height: auto;
+}
+
+.banner-kicker {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 8px;
+}
+
+.banner-text h1 {
+    margin: 0 0 8px;
+    text-align: left;
+    font-size: 36px;
+    color: #fff;
+}
+
+.banner-sub {
+    margin: 0;
+    max-width: 420px;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.user-menu {
+    position: relative;
+}
+
+.avatar-button {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #5ee7df 0%, #4a6cf7 100%);
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 12px 20px rgba(74, 108, 247, 0.35);
+}
+
+.user-dropdown {
+    position: absolute;
+    right: 0;
+    top: 72px;
+    background: #fff;
+    border-radius: 16px;
+    min-width: 200px;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+    padding: 16px;
+    display: none;
+    z-index: 10;
+}
+
+.user-dropdown.active {
+    display: block;
+}
+
+.user-name {
+    font-weight: 600;
+    margin: 0 0 12px;
+    color: #111827;
+}
+
+.dropdown-item {
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.dropdown-item:hover {
+    background: #f3f4f6;
+}
+
+.logout-item {
+    color: #b91c1c;
+}
+
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+}
+
+.opinion-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 240px;
+}
+
+.opinion-text {
+    font-size: 15px;
+    color: #1f2937;
+    line-height: 1.5;
+    min-height: 72px;
+}
+
+.rating-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.rating-buttons button {
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    padding: 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.rating-buttons button:hover {
+    background: #e0e7ff;
+    border-color: #c7d2fe;
+}
+
+.sparkline {
+    width: 100%;
+    height: 40px;
+    color: #4a6cf7;
+}
+
+.add-card {
+    border: 2px dashed #c7d2fe;
+    background: #eef2ff;
+    display: grid;
+    place-items: center;
+}
+
+.add-button {
+    border: none;
+    background: none;
+    display: grid;
+    place-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #4a6cf7;
+    font-weight: 600;
+}
+
+.add-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: #4a6cf7;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+}
+
+.add-text {
+    font-size: 14px;
+}
+
 @media (max-width: 480px) {
     .form-box {
         padding: 30px 20px;
@@ -275,5 +488,23 @@ select:focus {
 
     h1 {
         font-size: 24px;
+    }
+
+    body.dashboard-view .container {
+        padding: 20px 16px 40px;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .banner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .banner-text h1 {
+        font-size: 28px;
     }
 }
