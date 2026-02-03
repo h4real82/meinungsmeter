@@ -31,6 +31,11 @@ function initializeDatabase() {
       email TEXT UNIQUE NOT NULL,
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
+      age INTEGER,
+      state TEXT,
+      profession TEXT,
+      reset_token TEXT,
+      reset_token_expires DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `, (err) => {
@@ -44,11 +49,11 @@ function initializeDatabase() {
 
 // Signup Endpoint
 app.post('/api/signup', async (req, res) => {
-  const { email, username, password, confirmPassword } = req.body;
+  const { email, username, password, confirmPassword, age, state, profession } = req.body;
 
-  // Validierung
+  // Validierung - nur Pflichtfelder
   if (!email || !username || !password || !confirmPassword) {
-    return res.status(400).json({ message: 'Alle Felder sind erforderlich' });
+    return res.status(400).json({ message: 'Email, Username und Passwort sind erforderlich' });
   }
 
   if (password !== confirmPassword) {
@@ -65,8 +70,8 @@ app.post('/api/signup', async (req, res) => {
 
     // Benutzer in Datenbank speichern
     db.run(
-      'INSERT INTO users (email, username, password) VALUES (?, ?, ?)',
-      [email, username, hashedPassword],
+      'INSERT INTO users (email, username, password, age, state, profession) VALUES (?, ?, ?, ?, ?, ?)',
+      [email, username, hashedPassword, age || null, state || null, profession || null],
       function(err) {
         if (err) {
           if (err.message.includes('UNIQUE constraint failed')) {
@@ -135,6 +140,117 @@ app.post('/api/login', (req, res) => {
   }
 });
 
+// Passwort vergessen - Token generieren
+app.post('/api/forgot-password', (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email ist erforderlich' });
+  }
+
+  try {
+    // Benutzer in Datenbank suchen
+    db.get(
+      'SELECT id FROM users WHERE email = ?',
+      [email],
+      (err, user) => {
+        if (err) {
+          console.error('Datenbankfehler:', err);
+          return res.status(500).json({ message: 'Fehler beim Verarbeiten der Anfrage' });
+        }
+
+        if (!user) {
+          // Sicherheit: Nicht verraten, ob Email existiert
+          return res.status(200).json({ 
+            message: 'Wenn diese Email existiert, erhalten Sie einen Reset-Link' 
+          });
+        }
+
+        // Generiere einen zufälligen Reset-Token
+        const resetToken = require('crypto').randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 Stunde
+
+        // Speichere Token in Datenbank
+        db.run(
+          'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
+          [resetToken, expiresAt.toISOString(), user.id],
+          (err) => {
+            if (err) {
+              console.error('Datenbankfehler:', err);
+              return res.status(500).json({ message: 'Fehler beim Generieren des Reset-Tokens' });
+            }
+
+            // Token zurückgeben (in echter App würde das per Email versendet)
+            res.status(200).json({
+              message: 'Reset-Token generiert',
+              resetToken: resetToken,
+              note: 'In einer echten Anwendung würde dieser Token per Email versendet'
+            });
+          }
+        );
+      }
+    );
+  } catch (error) {
+    console.error('Fehler:', error);
+    res.status(500).json({ message: 'Fehler beim Verarbeiten der Anfrage' });
+  }
+});
+
+// Passwort zurücksetzen mit Token
+app.post('/api/reset-password', async (req, res) => {
+  const { resetToken, newPassword, confirmPassword } = req.body;
+
+  if (!resetToken || !newPassword || !confirmPassword) {
+    return res.status(400).json({ message: 'Alle Felder sind erforderlich' });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ message: 'Passwörter stimmen nicht überein' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: 'Passwort muss mindestens 6 Zeichen lang sein' });
+  }
+
+  try {
+    // Suche Benutzer mit gültigem Token
+    db.get(
+      'SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > datetime("now")',
+      [resetToken],
+      async (err, user) => {
+        if (err) {
+          console.error('Datenbankfehler:', err);
+          return res.status(500).json({ message: 'Fehler beim Verarbeiten der Anfrage' });
+        }
+
+        if (!user) {
+          return res.status(400).json({ message: 'Token ungültig oder abgelaufen' });
+        }
+
+        // Neues Passwort verschlüsseln
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Passwort aktualisieren und Token löschen
+        db.run(
+          'UPDATE users SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+          [hashedPassword, user.id],
+          (err) => {
+            if (err) {
+              console.error('Datenbankfehler:', err);
+              return res.status(500).json({ message: 'Fehler beim Zurücksetzen des Passworts' });
+            }
+
+            res.status(200).json({ message: 'Passwort erfolgreich zurückgesetzt' });
+          }
+        );
+      }
+    );
+  } catch (error) {
+    console.error('Fehler:', error);
+    res.status(500).json({ message: 'Fehler beim Verarbeiten der Anfrage' });
+  }
+});
+
 // Admin-Authentifizierung (einfacher Token)
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
@@ -149,7 +265,7 @@ function verifyAdminToken(req, res, next) {
 // Admin: Alle Benutzer abrufen
 app.get('/api/admin/users', verifyAdminToken, (req, res) => {
   db.all(
-    'SELECT id, email, username, created_at FROM users ORDER BY created_at DESC',
+    'SELECT id, email, username, age, state, profession, created_at FROM users ORDER BY created_at DESC',
     (err, users) => {
       if (err) {
         console.error('Datenbankfehler:', err);
@@ -205,21 +321,21 @@ app.delete('/api/admin/users/:id', verifyAdminToken, (req, res) => {
 // Admin: Benutzer aktualisieren
 app.put('/api/admin/users/:id', verifyAdminToken, async (req, res) => {
   const userId = req.params.id;
-  const { email, username, password } = req.body;
+  const { email, username, password, age, state, profession } = req.body;
 
   if (!email || !username) {
     return res.status(400).json({ message: 'Email und Username sind erforderlich' });
   }
 
   try {
-    let updateQuery = 'UPDATE users SET email = ?, username = ?';
-    let params = [email, username];
+    let updateQuery = 'UPDATE users SET email = ?, username = ?, age = ?, state = ?, profession = ?';
+    let params = [email, username, age || null, state || null, profession || null];
 
     // Passwort aktualisieren, falls vorhanden
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
-      updateQuery += ', password = ?';
-      params.push(hashedPassword);
+      updateQuery = 'UPDATE users SET email = ?, username = ?, password = ?, age = ?, state = ?, profession = ?';
+      params = [email, username, hashedPassword, age || null, state || null, profession || null];
     }
 
     updateQuery += ' WHERE id = ?';
@@ -248,7 +364,7 @@ app.put('/api/admin/users/:id', verifyAdminToken, async (req, res) => {
 
 // Admin: Neuen Benutzer erstellen
 app.post('/api/admin/users', verifyAdminToken, async (req, res) => {
-  const { email, username, password } = req.body;
+  const { email, username, password, age, state, profession } = req.body;
 
   if (!email || !username || !password) {
     return res.status(400).json({ message: 'Email, Username und Passwort sind erforderlich' });
@@ -258,8 +374,8 @@ app.post('/api/admin/users', verifyAdminToken, async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     db.run(
-      'INSERT INTO users (email, username, password) VALUES (?, ?, ?)',
-      [email, username, hashedPassword],
+      'INSERT INTO users (email, username, password, age, state, profession) VALUES (?, ?, ?, ?, ?, ?)',
+      [email, username, hashedPassword, age || null, state || null, profession || null],
       function(err) {
         if (err) {
           if (err.message.includes('UNIQUE constraint failed')) {

@@ -72,7 +72,7 @@ async function loadUsers() {
             const users = data.users || [];
             
             if (users.length === 0) {
-                usersList.innerHTML = '<tr><td colspan="5" class="no-data">Keine Benutzer vorhanden</td></tr>';
+                usersList.innerHTML = '<tr><td colspan="8" class="no-data">Keine Benutzer vorhanden</td></tr>';
                 return;
             }
             
@@ -81,10 +81,13 @@ async function loadUsers() {
                     <td>${user.id}</td>
                     <td>${user.username}</td>
                     <td>${user.email}</td>
+                    <td>${user.age || '-'}</td>
+                    <td>${user.state || '-'}</td>
+                    <td>${user.profession || '-'}</td>
                     <td>${formatDate(user.created_at)}</td>
                     <td>
                         <div class="actions">
-                            <button class="btn btn-edit" onclick="showEditUserModal(${user.id}, '${user.username}', '${user.email}')">Bearbeiten</button>
+                            <button class="btn btn-edit" onclick="showEditUserModal(${user.id}, '${user.username}', '${user.email}', ${user.age || null}, '${user.state || ''}', '${user.profession || ''}')">Bearbeiten</button>
                             <button class="btn btn-delete" onclick="showDeleteModal(${user.id}, '${user.email}')">Löschen</button>
                         </div>
                     </td>
@@ -124,11 +127,14 @@ async function loadStats() {
 }
 
 // Benutzer-Modal anzeigen (Bearbeitung)
-function showEditUserModal(userId, username, email) {
+function showEditUserModal(userId, username, email, age, state, profession) {
     currentEditUserId = userId;
     document.getElementById('modalTitle').textContent = 'Benutzer bearbeiten';
     document.getElementById('modalUsername').value = username;
     document.getElementById('modalEmail').value = email;
+    document.getElementById('modalAge').value = age || '';
+    document.getElementById('modalState').value = state || '';
+    document.getElementById('modalProfession').value = profession || '';
     document.getElementById('modalPassword').value = '';
     document.getElementById('modalMessage').textContent = '';
     document.getElementById('userModal').classList.add('active');
@@ -140,6 +146,9 @@ function showAddUserModal() {
     document.getElementById('modalTitle').textContent = 'Neuen Benutzer hinzufügen';
     document.getElementById('modalUsername').value = '';
     document.getElementById('modalEmail').value = '';
+    document.getElementById('modalAge').value = '';
+    document.getElementById('modalState').value = '';
+    document.getElementById('modalProfession').value = '';
     document.getElementById('modalPassword').value = '';
     document.getElementById('modalMessage').textContent = '';
     document.getElementById('userModal').classList.add('active');
@@ -157,6 +166,9 @@ document.getElementById('userForm').addEventListener('submit', async (e) => {
     
     const username = document.getElementById('modalUsername').value;
     const email = document.getElementById('modalEmail').value;
+    const age = document.getElementById('modalAge').value;
+    const state = document.getElementById('modalState').value;
+    const profession = document.getElementById('modalProfession').value;
     const password = document.getElementById('modalPassword').value;
     const messageDiv = document.getElementById('modalMessage');
     
@@ -168,7 +180,13 @@ document.getElementById('userForm').addEventListener('submit', async (e) => {
     try {
         let url = '/api/admin/users';
         let method = 'POST';
-        let body = { email, username };
+        let body = { 
+            email, 
+            username,
+            age: age ? parseInt(age) : null,
+            state: state || null,
+            profession: profession || null
+        };
         
         if (currentEditUserId) {
             url += '/' + currentEditUserId;

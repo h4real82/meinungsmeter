@@ -25,6 +25,7 @@
                     <div id="loginMessage" class="message"></div>
                 </form>
                 <p class="toggle-text">Noch kein Konto? <a href="#" onclick="toggleForms()">Hier registrieren</a></p>
+                <p class="toggle-text" style="font-size: 13px;"><a href="#" onclick="showForgotPasswordModal(event)">Passwort vergessen?</a></p>
                 <p class="admin-link" style="margin-top: 20px; text-align: center; font-size: 12px;"><a href="admin.html">Admin Konsole</a></p>
             </div>
         </div>
@@ -35,21 +36,56 @@
                 <h1>Registrierung</h1>
                 <form id="signupFormElement">
                     <div class="form-group">
-                        <label for="signupUsername">Benutzername:</label>
+                        <label for="signupUsername">Benutzername: <span class="required">*</span></label>
                         <input type="text" id="signupUsername" name="username" required>
                     </div>
                     <div class="form-group">
-                        <label for="signupEmail">Email:</label>
+                        <label for="signupEmail">Email: <span class="required">*</span></label>
                         <input type="email" id="signupEmail" name="email" required>
                     </div>
                     <div class="form-group">
-                        <label for="signupPassword">Passwort:</label>
+                        <label for="signupPassword">Passwort: <span class="required">*</span></label>
                         <input type="password" id="signupPassword" name="password" required>
                     </div>
                     <div class="form-group">
-                        <label for="confirmPassword">Passwort wiederholen:</label>
+                        <label for="confirmPassword">Passwort wiederholen: <span class="required">*</span></label>
                         <input type="password" id="confirmPassword" name="confirmPassword" required>
                     </div>
+                    
+                    <div class="optional-section">
+                        <p class="optional-label">Optionale Angaben:</p>
+                        <div class="form-group">
+                            <label for="signupAge">Alter:</label>
+                            <input type="number" id="signupAge" name="age" min="1" max="150">
+                        </div>
+                        <div class="form-group">
+                            <label for="signupState">Bundesland:</label>
+                            <select id="signupState" name="state">
+                                <option value="">-- Wählen Sie ein Bundesland --</option>
+                                <option value="Baden-Württemberg">Baden-Württemberg</option>
+                                <option value="Bayern">Bayern</option>
+                                <option value="Berlin">Berlin</option>
+                                <option value="Brandenburg">Brandenburg</option>
+                                <option value="Bremen">Bremen</option>
+                                <option value="Hamburg">Hamburg</option>
+                                <option value="Hessen">Hessen</option>
+                                <option value="Mecklenburg-Vorpommern">Mecklenburg-Vorpommern</option>
+                                <option value="Niedersachsen">Niedersachsen</option>
+                                <option value="Nordrhein-Westfalen">Nordrhein-Westfalen</option>
+                                <option value="Rheinland-Pfalz">Rheinland-Pfalz</option>
+                                <option value="Saarland">Saarland</option>
+                                <option value="Sachsen">Sachsen</option>
+                                <option value="Sachsen-Anhalt">Sachsen-Anhalt</option>
+                                <option value="Schleswig-Holstein">Schleswig-Holstein</option>
+                                <option value="Thüringen">Thüringen</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="signupProfession">Beruf:</label>
+                            <input type="text" id="signupProfession" name="profession" placeholder="z.B. Softwareentwickler">
+                        </div>
+                    </div>
+                    
                     <button type="submit" class="btn btn-primary">Registrieren</button>
                     <div id="signupMessage" class="message"></div>
                 </form>
@@ -63,6 +99,46 @@
                 <h1>Willkommen!</h1>
                 <div id="userInfo"></div>
                 <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+
+        <!-- Passwort vergessen Modal -->
+        <div id="forgotPasswordModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeForgotPasswordModal()">&times;</span>
+                <h2>Passwort zurücksetzen</h2>
+                
+                <!-- Step 1: Email eingeben -->
+                <div id="forgotStep1" class="forgot-step active">
+                    <p>Geben Sie Ihre Email-Adresse ein, um einen Reset-Link zu erhalten.</p>
+                    <div class="form-group">
+                        <label for="forgotEmail">Email:</label>
+                        <input type="email" id="forgotEmail" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="sendResetToken()">Reset-Link anfordern</button>
+                    <div id="forgotMessage1" class="message"></div>
+                </div>
+
+                <!-- Step 2: Neues Passwort setzen -->
+                <div id="forgotStep2" class="forgot-step">
+                    <p>Geben Sie Ihr neues Passwort ein.</p>
+                    <div class="form-group">
+                        <label for="resetToken">Reset-Token:</label>
+                        <input type="text" id="resetToken" placeholder="Token eingeben" required readonly>
+                        <small style="color: #999; margin-top: 5px; display: block;">Token wird angezeigt, nachdem Sie den Link angefordert haben</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="resetNewPassword">Neues Passwort:</label>
+                        <input type="password" id="resetNewPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="resetConfirmPassword">Passwort wiederholen:</label>
+                        <input type="password" id="resetConfirmPassword" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="confirmResetPassword()">Passwort zurücksetzen</button>
+                    <button type="button" class="btn btn-secondary" onclick="goBackToEmailReset()">Zurück</button>
+                    <div id="forgotMessage2" class="message"></div>
+                </div>
             </div>
         </div>
     </div>
