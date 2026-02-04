@@ -1,5 +1,34 @@
 // ===== FUNCTION DEFINITIONS (MUST BE FIRST) =====
 
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.log('Service Worker registration failed:', err));
+    });
+}
+
+// Dark Mode Toggle
+function initThemeToggle() {
+    const themeToggle = document.getElementById('themeToggle');
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (themeToggle) themeToggle.textContent = '☀️';
+    }
+    
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            themeToggle.textContent = isDark ? '☀️' : '🌙';
+        });
+    }
+}
+
 // Nachricht anzeigen
 function showMessage(messageDiv, message, type) {
     if (!messageDiv) return;
@@ -255,16 +284,22 @@ async function loadOpinions() {
             <div class="opinion-card" data-id="${o.id}" data-username="${escapeHtml(o.username||'')}">
                 <p class="opinion-text">${escapeHtml(o.text)}</p>
                 ${buttonsOrBar}
-                <p class="meta" style="font-size:12px;color:#666;margin-top:8px;">Gesamt: <span class="votes-total">${o.votes_total || 0}</span> · von ${escapeHtml(o.username || '–')}</p>
-                <svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
-                    <polyline points="0,30 20,22 40,26 60,18 80,16 100,12 120,10" fill="none" stroke="currentColor" stroke-width="3"/>
-                </svg>
+                <p class="meta" style="font-size:12px;color:var(--text-secondary);margin-top:8px;">Gesamt: <span class="votes-total">${o.votes_total || 0}</span> · von ${escapeHtml(o.username || '–')}</p>
+                <div class="facebook-share-wrapper">
+                    <div class="fb-share-button" data-href="${window.location.origin}" data-layout="button_count" data-size="small"></div>
+                </div>
             </div>
         `}).join('');
 
         gallery.innerHTML = addCardHtml + itemsHtml;
+        
+        // Reload Facebook SDK if available
+        if (window.FB) {
+            FB.XFBML.parse();
+        }
     } catch (err) {
         console.error('Fehler beim Laden der Meinungen', err);
+        gallery.innerHTML = '<p class="no-data">Fehler beim Laden der Meinungen.</p>';
     }
 }
 
@@ -579,9 +614,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Update char count on input
 window.addEventListener('DOMContentLoaded', () => {
+    initThemeToggle();
+    
     const opinionTextEl = document.getElementById('opinionText');
     if (opinionTextEl) {
         opinionTextEl.addEventListener('input', updateOpinionCharCount);
+    }
+    
+    // Initialize search
+    const searchBox = document.getElementById('searchBox');
+    if (searchBox) {
+        searchBox.addEventListener('input', (e) => {
+            searchOpinions(e.target.value);
+        });
     }
 });
 
@@ -648,3 +693,168 @@ window.addEventListener('click', (event) => {
         closeForgotPasswordModal();
     }
 });
+
+// ===== NEW FEATURES =====
+
+// Search Opinions
+async function searchOpinions(query) {
+    if (query.length < 2) {
+        loadOpinions();
+        return;
+    }
+    
+    try {
+        const resp = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await resp.json();
+        const gallery = document.querySelector('.gallery');
+        
+        if (!data.results || data.results.length === 0) {
+            gallery.innerHTML = '<p class="no-data">Keine Meinungen gefunden.</p>';
+            return;
+        }
+        
+        const userVotes = JSON.parse(localStorage.getItem('userVotes') || '{}');
+        const addCardHtml = `
+            <div class="opinion-card add-card">
+                <button class="add-button" type="button">
+                    <span class="add-icon">+</span>
+                    <span class="add-text">Meinung anlegen</span>
+                </button>
+            </div>`;
+        
+        const itemsHtml = data.results.map(o => {
+            const hasVoted = userVotes[o.id];
+            const total = o.votes_total || 0;
+            let buttonsOrBar = '';
+            
+            if (hasVoted) {
+                const forPct = total > 0 ? (o.votes_for / total) * 100 : 0;
+                const neutralPct = total > 0 ? (o.votes_neutral / total) * 100 : 0;
+                const againstPct = total > 0 ? (o.votes_against / total) * 100 : 0;
+                let arrowPct = 0;
+                if (total > 0) {
+                    arrowPct = (o.votes_for * 0 + o.votes_neutral * 0.5 + o.votes_against * 1) / total * 100;
+                }
+                
+                buttonsOrBar = `
+                    <div class="stats-bar-container">
+                        <div class="stats-bar">
+                            <div class="bar-section bar-for" style="width:${forPct}%"></div>
+                            <div class="bar-section bar-neutral" style="width:${neutralPct}%"></div>
+                            <div class="bar-section bar-against" style="width:${againstPct}%"></div>
+                            <div class="vote-indicator" style="left:${arrowPct}%"></div>
+                        </div>
+                    </div>
+                    <div class="stats-votes">Votes: ${total}</div>`;
+            } else {
+                buttonsOrBar = `
+                    <div class="rating-buttons">
+                        <button type="button" data-vote="for">Dafür</button>
+                        <button type="button" data-vote="neutral">Egal</button>
+                        <button type="button" data-vote="against">Dagegen</button>
+                    </div>`;
+            }
+            
+            return `
+            <div class="opinion-card" data-id="${o.id}" data-username="${escapeHtml(o.username||'')}">
+                <p class="opinion-text">${escapeHtml(o.text)}</p>
+                ${buttonsOrBar}
+                <p class="meta" style="font-size:12px;color:var(--text-secondary);margin-top:8px;">Gesamt: <span class="votes-total">${o.votes_total || 0}</span> · von ${escapeHtml(o.username || '–')}</p>
+                <div class="facebook-share-wrapper">
+                    <div class="fb-share-button" data-href="${window.location.origin}" data-layout="button_count" data-size="small"></div>
+                </div>
+            </div>`;
+        }).join('');
+        
+        gallery.innerHTML = addCardHtml + itemsHtml;
+        
+        if (window.FB) {
+            FB.XFBML.parse();
+        }
+    } catch (err) {
+        console.error('Suchfehler:', err);
+    }
+}
+
+// Load Trending Opinions
+async function loadTrending() {
+    try {
+        const resp = await fetch('/api/trending');
+        const data = await resp.json();
+        const gallery = document.querySelector('.gallery');
+        
+        const userVotes = JSON.parse(localStorage.getItem('userVotes') || '{}');
+        const addCardHtml = `
+            <div class="opinion-card add-card">
+                <button class="add-button" type="button">
+                    <span class="add-icon">+</span>
+                    <span class="add-text">Meinung anlegen</span>
+                </button>
+            </div>`;
+        
+        const itemsHtml = (data.trending || []).map(o => {
+            const total = o.votes_total || 0;
+            const forPct = total > 0 ? (o.votes_for / total) * 100 : 0;
+            const neutralPct = total > 0 ? (o.votes_neutral / total) * 100 : 0;
+            const againstPct = total > 0 ? (o.votes_against / total) * 100 : 0;
+            let arrowPct = 0;
+            if (total > 0) {
+                arrowPct = (o.votes_for * 0 + o.votes_neutral * 0.5 + o.votes_against * 1) / total * 100;
+            }
+            
+            return `
+            <div class="opinion-card" data-id="${o.id}" data-username="${escapeHtml(o.username||'')}">
+                <span class="trend-badge">🔥 Trending</span>
+                <p class="opinion-text">${escapeHtml(o.text)}</p>
+                <div class="stats-bar-container">
+                    <div class="stats-bar">
+                        <div class="bar-section bar-for" style="width:${forPct}%"></div>
+                        <div class="bar-section bar-neutral" style="width:${neutralPct}%"></div>
+                        <div class="bar-section bar-against" style="width:${againstPct}%"></div>
+                        <div class="vote-indicator" style="left:${arrowPct}%"></div>
+                    </div>
+                </div>
+                <div class="stats-votes">Votes: ${total}</div>
+                <p class="meta" style="font-size:12px;color:var(--text-secondary);margin-top:8px;">von ${escapeHtml(o.username || '–')}</p>
+            </div>`;
+        }).join('');
+        
+        gallery.innerHTML = addCardHtml + itemsHtml;
+    } catch (err) {
+        console.error('Trending load error:', err);
+    }
+}
+
+// Load Leaderboard
+async function loadLeaderboard() {
+    try {
+        const resp = await fetch('/api/leaderboard');
+        const data = await resp.json();
+        
+        const lb = (data.leaderboard || []).map((user, idx) => `
+            <div class="leaderboard-item">
+                <span class="rank">#${idx + 1}</span>
+                <span class="name">${escapeHtml(user.username)}</span>
+                <span class="stats">${user.opinion_count} Meinungen · ${user.total_votes} Votes</span>
+            </div>
+        `).join('');
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                <h2>🏆 Leaderboard</h2>
+                <div class="leaderboard">
+                    ${lb}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+    } catch (err) {
+        console.error('Leaderboard error:', err);
+    }
+}

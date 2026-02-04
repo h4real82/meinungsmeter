@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeinungsMeter API Dokumentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #f4f6fb;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #5ee7df;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #a0aec0;
+            margin-bottom: 40px;
+        }
+        
+        .endpoint {
+            background: #1a1f3a;
+            border-left: 4px solid #4a6cf7;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+        
+        .method.get {
+            background: #4a6cf7;
+            color: white;
+        }
+        
+        .method.post {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .method.put {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .method.delete {
+            background: #f56565;
+            color: white;
+        }
+        
+        .endpoint-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px 0;
+            color: white;
+        }
+        
+        .description {
+            color: #cbd5e0;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .params {
+            background: #0a0e27;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        
+        code {
+            background: #0a0e27;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #5ee7df;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .nav {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .nav a {
+            color: #4a6cf7;
+            text-decoration: none;
+            margin: 0 15px;
+            transition: color 0.3s;
+        }
+        
+        .nav a:hover {
+            color: #5ee7df;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 MeinungsMeter API Dokumentation</h1>
+        <p class="subtitle">RESTful API für Meinungsmetering und Abstimmungen</p>
+        
+        <div class="nav">
+            <a href="/">← Zurück zur App</a>
+            <a href="#auth">Authentifizierung</a>
+            <a href="#users">Benutzer</a>
+            <a href="#opinions">Meinungen</a>
+            <a href="#analytics">Analytics</a>
+        </div>
+        
+        <h2 id="auth" style="color: #5ee7df; margin-top: 40px;">🔐 Authentifizierung</h2>
+        
+        <div class="endpoint">
+            <span class="method post">POST</span>
+            <div class="endpoint-title">/api/signup</div>
+            <p class="description">Neuen Benutzer registrieren</p>
+            <div class="params">
+                <strong>Body:</strong><br>
+                <code>{ email, username, password, confirmPassword, age?, state?, profession? }</code>
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method post">POST</span>
+            <div class="endpoint-title">/api/login</div>
+            <p class="description">Benutzer anmelden</p>
+            <div class="params">
+                <strong>Body:</strong><br>
+                <code>{ email, password }</code>
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method post">POST</span>
+            <div class="endpoint-title">/api/forgot-password</div>
+            <p class="description">Passwort-Reset anfordern</p>
+            <div class="params">
+                <strong>Body:</strong><br>
+                <code>{ email }</code>
+            </div>
+        </div>
+        
+        <h2 id="users" style="color: #5ee7df; margin-top: 40px;">👥 Benutzer</h2>
+        
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <div class="endpoint-title">/api/users/:id/profile</div>
+            <p class="description">Benutzerprofil und Statistiken abrufen</p>
+            <div class="params">
+                <strong>Parameter:</strong> id (Benutzer-ID)<br>
+                <strong>Response:</strong> { user, opinions, opinion_count, total_votes }
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <div class="endpoint-title">/api/users/:id/export</div>
+            <p class="description">Benutzerdaten als JSON exportieren</p>
+            <div class="params">
+                <strong>Header:</strong> Authorization: Bearer {token}<br>
+                <strong>Parameter:</strong> id (Benutzer-ID)<br>
+                <strong>Response:</strong> JSON-Datei mit Benutzerdaten und Meinungen
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <div class="endpoint-title">/api/leaderboard</div>
+            <p class="description">Top 10 Benutzer nach Votes</p>
+            <div class="params">
+                <strong>Response:</strong> { leaderboard: [{ username, opinion_count, total_votes }] }
+            </div>
+        </div>
+        
+        <h2 id="opinions" style="color: #5ee7df; margin-top: 40px;">💭 Meinungen</h2>
+        
+        <div class="endpoint">
+            <span class="method post">POST</span>
+            <div class="endpoint-title">/api/opinions</div>
+            <p class="description">Neue Meinung erstellen</p>
+            <div class="params">
+                <strong>Header:</strong> Authorization: Bearer {token}<br>
+                <strong>Body:</strong><br>
+                <code>{ text }</code>
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <div class="endpoint-title">/api/opinions</div>
+            <p class="description">Alle Meinungen abrufen</p>
+            <div class="params">
+                <strong>Response:</strong> { opinions: [{ id, text, votes_for, votes_neutral, votes_against, votes_total, ... }] }
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method post">POST</span>
+            <div class="endpoint-title">/api/opinions/:id/vote</div>
+            <p class="description">Auf eine Meinung abstimmen</p>
+            <div class="params">
+                <strong>Header:</strong> Authorization: Bearer {token}<br>
+                <strong>Parameter:</strong> id (Meinung-ID)<br>
+                <strong>Body:</strong><br>
+                <code>{ type: "for" | "neutral" | "against" }</code>
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <div class="endpoint-title">/api/trending</div>
+            <p class="description">Top 5 Trending Meinungen (nach Votes)</p>
+            <div class="params">
+                <strong>Response:</strong> { trending: [{ id, text, votes_total, ... }] }
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <div class="endpoint-title">/api/search?q=query&limit=20</div>
+            <p class="description">Meinungen durchsuchen</p>
+            <div class="params">
+                <strong>Parameter:</strong> q (Suchbegriff), limit (max 20)<br>
+                <strong>Response:</strong> { results: [...] }
+            </div>
+        </div>
+        
+        <h2 id="analytics" style="color: #5ee7df; margin-top: 40px;">📊 Analytics</h2>
+        
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <div class="endpoint-title">/api/analytics/region</div>
+            <p class="description">Abstimmungsdaten nach Bundesland</p>
+            <div class="params">
+                <strong>Response:</strong> { analytics: [{ state, opinion_count, total_votes, avg_support }] }
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <div class="endpoint-title">/api/analytics/age</div>
+            <p class="description">Abstimmungsdaten nach Altersgruppe</p>
+            <div class="params">
+                <strong>Response:</strong> { analytics: [{ age_group, opinion_count, total_votes }] }
+            </div>
+        </div>
+        
+        <h2 style="color: #5ee7df; margin-top: 40px;">⚙️ Error Codes</h2>
+        
+        <div style="background: #1a1f3a; padding: 20px; border-radius: 8px; border-left: 4px solid #f56565;">
+            <p><strong>400 Bad Request:</strong> Ungültige Anfrageparameter</p>
+            <p><strong>401 Unauthorized:</strong> Authentifizierung erforderlich</p>
+            <p><strong>403 Forbidden:</strong> Nicht autorisiert</p>
+            <p><strong>404 Not Found:</strong> Ressource nicht gefunden</p>
+            <p><strong>429 Too Many Requests:</strong> Rate Limit überschritten</p>
+            <p><strong>500 Server Error:</strong> Fehler auf dem Server</p>
+        </div>
+    </div>
+</body>
+</html>

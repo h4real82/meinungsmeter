@@ -604,6 +604,221 @@ app.post('/api/admin/users', verifyAdminToken, async (req, res) => {
   }
 });
 
+// ===== NEW FEATURES =====
+
+// Get Trending Opinions (top 5 by votes)
+app.get('/api/trending', (req, res) => {
+  db.all(
+    'SELECT * FROM opinions ORDER BY votes_total DESC LIMIT 5',
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ message: 'Fehler beim Laden' });
+      }
+      res.json({ trending: rows || [] });
+    }
+  );
+});
+
+// Get Leaderboard (top users by vote count)
+app.get('/api/leaderboard', (req, res) => {
+  db.all(
+    `SELECT user_id, username, COUNT(*) as opinion_count, SUM(votes_total) as total_votes
+     FROM opinions 
+     WHERE user_id IS NOT NULL
+     GROUP BY user_id
+     ORDER BY total_votes DESC
+     LIMIT 10`,
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ message: 'Fehler beim Laden' });
+      }
+      res.json({ leaderboard: rows || [] });
+    }
+  );
+});
+
+// Get user profile and stats
+app.get('/api/users/:id/profile', (req, res) => {
+  const userId = req.params.id;
+  
+  db.get(
+    'SELECT id, username, email, age, state, profession, created_at FROM users WHERE id = ?',
+    [userId],
+    (err, user) => {
+      if (err || !user) {
+        return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+      }
+      
+      db.all(
+        'SELECT * FROM opinions WHERE user_id = ? ORDER BY created_at DESC',
+        [userId],
+        (err, opinions) => {
+          res.json({ 
+            user: {
+              ...user,
+              opinion_count: opinions ? opinions.length : 0,
+              total_votes: opinions ? opinions.reduce((sum, o) => sum + (o.votes_total || 0), 0) : 0
+            },
+            opinions: opinions || []
+          });
+        }
+      );
+    }
+  );
+});
+
+// Search opinions
+app.get('/api/search', (req, res) => {
+  const query = req.query.q || '';
+  const limit = req.query.limit || 20;
+  
+  if (query.length < 2) {
+    return res.json({ results: [] });
+  }
+  
+  db.all(
+    'SELECT * FROM opinions WHERE text LIKE ? ORDER BY created_at DESC LIMIT ?',
+    [`%${query}%`, limit],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ message: 'Fehler beim Suchen' });
+      }
+      res.json({ results: rows || [] });
+    }
+  );
+});
+
+// Get voting analytics by region
+app.get('/api/analytics/region', (req, res) => {
+  db.all(
+    `SELECT u.state, 
+            COUNT(DISTINCT o.id) as opinion_count,
+            SUM(o.votes_total) as total_votes,
+            AVG(CAST(o.votes_for AS FLOAT) / NULLIF(o.votes_total, 0)) as avg_support
+     FROM users u
+     LEFT JOIN opinions o ON u.id = o.user_id
+     WHERE u.state IS NOT NULL
+     GROUP BY u.state
+     ORDER BY total_votes DESC`,
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ message: 'Fehler beim Laden' });
+      }
+      res.json({ analytics: rows || [] });
+    }
+  );
+});
+
+// Get voting analytics by age group
+app.get('/api/analytics/age', (req, res) => {
+  db.all(
+    `SELECT 
+            CASE 
+              WHEN age < 18 THEN 'Under 18'
+              WHEN age < 25 THEN '18-24'
+              WHEN age < 35 THEN '25-34'
+              WHEN age < 45 THEN '35-44'
+              WHEN age < 55 THEN '45-54'
+              ELSE '55+'
+            END as age_group,
+            COUNT(DISTINCT o.id) as opinion_count,
+            SUM(o.votes_total) as total_votes
+     FROM users u
+     LEFT JOIN opinions o ON u.id = o.user_id
+     WHERE u.age IS NOT NULL
+     GROUP BY age_group
+     ORDER BY CASE 
+       WHEN age_group = 'Under 18' THEN 1
+       WHEN age_group = '18-24' THEN 2
+       WHEN age_group = '25-34' THEN 3
+       WHEN age_group = '35-44' THEN 4
+       WHEN age_group = '45-54' THEN 5
+       ELSE 6
+     END`,
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ message: 'Fehler beim Laden' });
+      }
+      res.json({ analytics: rows || [] });
+    }
+  );
+});
+
+// Export user data as JSON
+app.get('/api/users/:id/export', (req, res) => {
+  const userId = req.params.id;
+  const userToken = req.headers.authorization?.split(' ')[1];
+  
+  // Verify user can only export own data
+  try {
+    const decoded = JSON.parse(Buffer.from(userToken.split('.')[1], 'base64').toString());
+    if (decoded.id != userId) {
+      return res.status(403).json({ message: 'Nicht autorisiert' });
+    }
+  } catch (e) {
+    return res.status(401).json({ message: 'Token ungültig' });
+  }
+  
+  db.get(
+    'SELECT * FROM users WHERE id = ?',
+    [userId],
+    (err, user) => {
+      if (err || !user) {
+        return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+      }
+      
+      db.all(
+        'SELECT * FROM opinions WHERE user_id = ?',
+        [userId],
+        (err, opinions) => {
+          const exportData = {
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              age: user.age,
+              state: user.state,
+              profession: user.profession,
+              created_at: user.created_at
+            },
+            opinions: opinions || [],
+            export_date: new Date().toISOString()
+          };
+          
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Disposition', `attachment; filename="meinungsmeter-export-${userId}.json"`);
+          res.json(exportData);
+        }
+      );
+    }
+  );
+});
+
+// Rate limiting check endpoint
+app.post('/api/rate-limit-check', (req, res) => {
+  const ip = req.ip;
+  const now = Date.now();
+  const timeWindow = 60000; // 1 minute
+  const maxVotes = 10; // max 10 votes per minute per IP
+  
+  // Simple in-memory store (in production use Redis)
+  if (!global.rateLimit) global.rateLimit = {};
+  
+  if (!global.rateLimit[ip]) {
+    global.rateLimit[ip] = [];
+  }
+  
+  // Clean old entries
+  global.rateLimit[ip] = global.rateLimit[ip].filter(t => now - t < timeWindow);
+  
+  if (global.rateLimit[ip].length >= maxVotes) {
+    return res.status(429).json({ message: 'Zu viele Anfragen. Bitte versuchen Sie später erneut.' });
+  }
+  
+  global.rateLimit[ip].push(now);
+  res.json({ allowed: true });
+});
+
 // Server starten
 app.listen(PORT, () => {
   console.log(`Server läuft auf http://localhost:${PORT}`);

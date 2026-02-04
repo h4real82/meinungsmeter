@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4a6cf7">
+    <meta name="description" content="MeinungsMeter - Bewerte Meinungen in Echtzeit">
     <title>Meinungsmeter - Login & Signup</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <div class="container">
@@ -119,6 +122,16 @@
                     </div>
                 </div>
                 <div class="user-menu">
+                    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Theme wechseln" title="Dark/Light Mode">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    <button class="feature-btn" type="button" onclick="loadTrending()" title="Trending">
+                        <span>🔥</span>
+                    </button>
+                    <button class="feature-btn" type="button" onclick="loadLeaderboard()" title="Leaderboard">
+                        <span>🏆</span>
+                    </button>
+                    <input type="text" id="searchBox" class="search-box" placeholder="Suchen..." style="display: none;">
                     <button class="avatar-button" id="userMenuButton" type="button" aria-expanded="false" aria-haspopup="true">
                         <span id="userAvatar">M</span>
                     </button>
@@ -131,73 +144,10 @@
                 </div>
             </header>
 
-            <section class="gallery">
-                <div class="opinion-card add-card">
-                    <button class="add-button" type="button">
-                        <span class="add-icon">+</span>
-                        <span class="add-text">Meinung anlegen</span>
-                    </button>
-                </div>
-
-                <div class="opinion-card">
-                    <p class="opinion-text">Remote Work sollte Standard sein, weil es Produktivität und Work-Life-Balance verbessert.</p>
-                    <div class="rating-buttons">
-                        <button type="button">Dafür</button>
-                        <button type="button">Egal</button>
-                        <button type="button">Dagegen</button>
-                    </div>
-                    <svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
-                        <polyline points="0,30 20,22 40,26 60,18 80,16 100,12 120,10" fill="none" stroke="currentColor" stroke-width="3"/>
-                    </svg>
-                </div>
-
-                <div class="opinion-card">
-                    <p class="opinion-text">Eine City-Maut würde den Verkehr beruhigen und die Luftqualität deutlich verbessern.</p>
-                    <div class="rating-buttons">
-                        <button type="button">Dafür</button>
-                        <button type="button">Egal</button>
-                        <button type="button">Dagegen</button>
-                    </div>
-                    <svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
-                        <polyline points="0,26 20,28 40,20 60,22 80,14 100,18 120,12" fill="none" stroke="currentColor" stroke-width="3"/>
-                    </svg>
-                </div>
-
-                <div class="opinion-card">
-                    <p class="opinion-text">KI-Assistenten sollten verpflichtend transparent machen, wie sie Entscheidungen treffen.</p>
-                    <div class="rating-buttons">
-                        <button type="button">Dafür</button>
-                        <button type="button">Egal</button>
-                        <button type="button">Dagegen</button>
-                    </div>
-                    <svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
-                        <polyline points="0,32 20,26 40,18 60,20 80,14 100,8 120,14" fill="none" stroke="currentColor" stroke-width="3"/>
-                    </svg>
-                </div>
-
-                <div class="opinion-card">
-                    <p class="opinion-text">Der ÖPNV sollte in Großstädten komplett kostenlos sein, um soziale Teilhabe zu sichern.</p>
-                    <div class="rating-buttons">
-                        <button type="button">Dafür</button>
-                        <button type="button">Egal</button>
-                        <button type="button">Dagegen</button>
-                    </div>
-                    <svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
-                        <polyline points="0,28 20,18 40,12 60,20 80,24 100,14 120,18" fill="none" stroke="currentColor" stroke-width="3"/>
-                    </svg>
-                </div>
-
-                <div class="opinion-card">
-                    <p class="opinion-text">Schulunterricht braucht mehr Projektarbeit, damit Schüler*innen praxisnäher lernen.</p>
-                    <div class="rating-buttons">
-                        <button type="button">Dafür</button>
-                        <button type="button">Egal</button>
-                        <button type="button">Dagegen</button>
-                    </div>
-                    <svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
-                        <polyline points="0,24 20,20 40,22 60,16 80,10 100,12 120,8" fill="none" stroke="currentColor" stroke-width="3"/>
-                    </svg>
-                </div>
+            <section class="gallery" id="opinionGallery">
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
             </section>
         </div>
 
@@ -272,6 +222,10 @@
             </div>
         </div>
     </div>
+
+    <!-- Facebook SDK -->
+    <div id="fb-root"></div>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/de_DE/sdk.js#xfbml=1&version=v18.0" nonce="abc123"></script>
 
     <script src="script.js"></script>
 </body>
